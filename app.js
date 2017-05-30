@@ -5,7 +5,6 @@ const crypto = require('crypto')
 const express = require('express')
 const https = require('https')
 const request = require('request')
-const sass = require('node-sass-middleware')
 const path = require('path')
 
 
@@ -20,10 +19,6 @@ mongoose.connection.on('error', () => {
 const app = express()
 app.set('port', process.env.PORT || 3000)
 app.set('view engine', 'pug')
-app.use(sass({
-  src: path.join(__dirname, 'public'),
-  dest: path.join(__dirname, 'public')
-}))
 app.use(bodyParser.json({ verify: verifyRequestSignature }))
 app.use(express.static('public'))
 
