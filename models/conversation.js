@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const Modes = require('../models/modes')
 
 /**
  * Provides context for messages received in the conversation.
@@ -38,6 +39,26 @@ conversationSchema.methods.setMode = function(mode) {
 
 conversationSchema.methods.getMode = function() {
   return this._context.mode
+}
+
+
+conversationSchema.methods.switchMode = function() {
+  if (this.getMode() === Modes.CONSUME) {
+    this.setMode(Modes.CONTRIBUTE)
+  } else if (this.getMode() === Modes.CONTRIBUTE) {
+    this.setMode(Modes.CONSUME)
+  } else {
+    throw new Error(`Unknown mode: ${this.getMode()}`)
+  }
+}
+
+
+conversationSchema.methods.hasFullResourceContext = function() {
+  if (this.getMode() && this.getCourse() && this.getSchool()) {
+    return true
+  } else {
+    return false
+  }
 }
 
 

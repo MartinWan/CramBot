@@ -3,6 +3,7 @@ const Contribute = require('./contribute')
 const SchoolSelection = require('./school-selection')
 const GetStarted = require('./get-started')
 const MainMenu = require('./main-menu')
+const SwitchMode = require('./switch-mode')
 
 /**
  * Creates an executable action from a payload sent from a postback or quick reply
@@ -13,7 +14,7 @@ class ActionFactory {
     this._resourceService = resourceService
   }
 
-  createAction(payload) {
+  createActionFromPayload(payload) {
     if (payload === GetStarted.payload) {
       return new GetStarted(this._conversation.senderId, new Consume(this._conversation))
     } else if (payload === Consume.payload) {
@@ -24,8 +25,12 @@ class ActionFactory {
       return new SchoolSelection(this._conversation, payload, this._resourceService)
     } else if (payload === MainMenu.payload) {
       return new MainMenu(this._conversation.senderId)
+    } else if (payload === SwitchMode.payload) {
+      const consume = new Consume(this._conversation)
+      const contribute = new Contribute(this._conversation)
+      return new SwitchMode(this._conversation.senderId, this._conversation, consume, contribute)
     } else {
-      throw new Error(`Unable to create action for payload ${payload}`) // TODO-MW Do not throw here?
+      throw new Error(`Unable to create action for payload ${payload}`)
     }
   }
 }

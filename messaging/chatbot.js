@@ -9,6 +9,7 @@ const TextMessage = require('../messenger-api/message/text-message')
 const Template = require('../messenger-api/message/template')
 const send_api = require('../messenger-api/send-api')
 const MainMenu = require('./action/main-menu')
+const SwitchMode = require('./action/switch-mode')
 
 /**
  * A class that warps the persisted conversation model. Handles
@@ -77,12 +78,13 @@ class ChatBot {
   }
 
   _handleAction(payload) {
-    this._actionFactory.createAction(payload).execute(err => {
-      if (err) ErrorHandling.handleError(this.senderId, error)
+    this._actionFactory.createActionFromPayload(payload).execute(error => {
+      if (error) ErrorHandling.handleError(this.senderId, error)
     })
   }
 
   _handleTextMessage(message) {
+
     const modeContext = this._conversation.getMode()
     const schoolContext = this._conversation.getSchool()
 
@@ -103,21 +105,7 @@ class ChatBot {
             this._resourceService.getResources(schoolContext, message, (error, resources) => {
               if (error) return ErrorHandling.handleError(this.senderId, error)
 
-              const messages = []
-              if (_.isEmpty(resources)) {
-                messages.push(new TextMessage('Sorry no resources for this course were contributed yet. Be the first!'))
-              } else {
-                messages.push(new TextMessage("Ok! Here's some cram material for my favorite crammer <3..."))
-                messages.push(Template.fromResources(resources))
-              }
-              messages.push(
-                new Template(
-                  send_api.button_template(
-                    'Type another course or press cancel to return to the main menu',
-                    [send_api.postback_button('Cancel', MainMenu.payload)])
-                )
-              )
-              Response.sendMessages(this.senderId, messages)
+              this._sendResources(resources)
             })
           } else {
             ErrorHandling.handleUnimplementedError(this.senderId)
@@ -128,6 +116,7 @@ class ChatBot {
       ErrorHandling.handleUnimplementedError(this.senderId)
     }
   }
+
 
   _handleAttachments(attachments) {
     const school = this._conversation.getSchool()
@@ -146,12 +135,35 @@ class ChatBot {
         resource.save(error => {
           if (error) return ErrorHandling.handleError(this.senderId, error)
 
-          Response.sendMessage(this.senderId, new TextMessage("Thank for contributing."))
+          Response.sendMessage(this.senderId, new TextMessage("Thank for contributing. Your cram material will be included once it is reviewed."))
         })
       })
     } else {
       ErrorHandling.handleUnimplementedError(this.senderId)
     }
+  }
+
+
+  _sendResources(resources) {
+    // TODO-MW this method should eventually be placed into an Action class
+    // when we can support Action payloads with parameters using protobuf
+    const messages = []
+    if (_.isEmpty(resources)) {
+      const buttonTemplate = send_api.button_template(
+        'Sorry no resources for this course were contributed yet. Be the first!',
+        [send_api.postback_button('Help People Cram', SwitchMode.payload)]
+      )
+      messages.push(new Template(buttonTemplate))
+    } else {
+      messages.push(new TextMessage("Ok! Here's some cram material for my favorite crammer <3..."))
+      messages.push(Template.fromResources(resources))
+    }
+    const returnToMenu = send_api.button_template(
+      'Type another course or press cancel to return to the main menu',
+      [send_api.postback_button('Cancel', MainMenu.payload)]
+    )
+    messages.push(new Template(returnToMenu))
+    Response.sendMessages(this.senderId, messages)
   }
 }
 
