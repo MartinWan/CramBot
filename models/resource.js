@@ -24,7 +24,7 @@ const resourceSchema = new mongoose.Schema({
   isApproved: { // if this resource is approved by administrators of the application
     type: Boolean,
     required: true,
-    default: false
+    default: true
   }
 })
 
